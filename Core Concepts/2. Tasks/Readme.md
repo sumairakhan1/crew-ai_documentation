@@ -2870,3 +2870,407 @@ Would you like to see:
 2️⃣ **Automating CrewAI with a scheduler?**  
 
 Let me know! 🚀
+
+# 16. Tool Override Mechanism, Error Handling, and Task Guardrails in CrewAI
+
+# 🛠️ **Tool Override Mechanism, Error Handling, and Task Guardrails in CrewAI**  
+
+---
+
+## 🎯 **What is Tool Override in CrewAI?**  
+By default, **CrewAI agents** have **specific tools** assigned to them. However, sometimes a task may require **a different tool** than the agent's default. In such cases, **Tool Override** allows us to specify custom tools for a particular task.  
+
+This feature provides:  
+✅ **Flexibility** – Agents can dynamically adapt to different tasks.  
+✅ **Efficiency** – The right tool is used for the right job.  
+✅ **Customization** – Agents can perform specialized tasks without changing their overall function.  
+
+---
+
+## 🌍 **Real-World Example**  
+🔹 **Scenario**: A **content writer AI** usually writes articles using **a text generator tool**.  
+🔹 But in **one specific task**, we want it to **fetch real-world AI news** before writing.  
+🔹 We override its **default writing tool** with a **search tool** to ensure accuracy.  
+
+---
+
+## 📝 **Step 1: Tool Override Example in CrewAI**  
+### **🔹 Without Tool Override (Using Default Tools)**
+```python
+from crewai import Agent, Task
+
+# 🖊️ Default AI Writer Agent
+writer_agent = Agent(
+    role="Writer",
+    goal="Write engaging tech articles",
+    backstory="A professional AI blog writer",
+    tools=["text_generator_tool"]  # Default tool
+)
+
+# 📝 Writing Task (Uses Default Tool)
+write_task = Task(
+    description="Write a blog post about AI advancements",
+    expected_output="A 500-word AI article",
+    agent=writer_agent  # Uses agent's default tool (text_generator_tool)
+)
+```
+🔹 Here, the **AI Writer** uses its **default text generation tool**.  
+🔹 But what if we want it to **search the latest news** first?  
+
+---
+
+### **🔹 With Tool Override (Using a Custom Tool)**
+```python
+from crewai_tools import SerperDevTool
+
+# 🔍 Define a Tool for Searching AI News
+search_tool = SerperDevTool()
+
+# 📝 Writing Task (Overrides Default Tool)
+write_task = Task(
+    description="Write a blog post about AI advancements",
+    expected_output="A 500-word AI article",
+    agent=writer_agent,
+    tools=[search_tool]  # ✅ Overrides the default tool and forces it to use SerperDevTool
+)
+```
+### **🔍 Explanation:**  
+✔ **Instead of using the text generator tool**, the AI Writer **first searches for AI news** using **SerperDevTool**.  
+✔ **Overrides** the default tool **for this task only** (does not affect other tasks).  
+
+🔹 **Result?** More **accurate** and **fact-based** AI blog posts! 🚀  
+
+---
+
+# ⚠️ **Error Handling and Validation in CrewAI**  
+
+## 🔍 **Why Validation is Important?**  
+When creating tasks, errors can **break workflows** or produce **unexpected results**. **CrewAI** provides built-in validation to ensure:  
+✅ **Only one output type** per task (to avoid confusion).  
+✅ **Automatic ID assignment** (to prevent conflicts).  
+✅ **Valid task attributes** (ensuring smooth execution).  
+
+---
+
+## 📌 **Step 2: Error Handling Example**
+### **🔹 Catching Missing Agent Error**
+```python
+try:
+    invalid_task = Task(
+        description="Analyze AI trends",
+        expected_output="A summary of AI trends",
+        agent=None  # ❌ Missing agent (Error!)
+    )
+except Exception as e:
+    print(f"❌ Error: {e}")
+```
+🔹 **What happens?** Since the agent is missing, CrewAI throws an **error**.  
+🔹 **How does CrewAI help?** Instead of failing silently, it **prevents execution** and alerts the developer.  
+
+---
+
+### **🔹 Catching Incorrect Output Type**
+```python
+try:
+    invalid_task = Task(
+        description="Analyze AI trends",
+        expected_output={"summary": "AI trends"},  # ❌ Wrong format (should be a string)
+        agent=writer_agent
+    )
+except Exception as e:
+    print(f"❌ Error: {e}")
+```
+🔹 CrewAI expects **output to be a string**, but we passed a **dictionary**.  
+🔹 CrewAI **validates the output type** and prevents execution.  
+
+---
+
+# 🛡️ **Task Guardrails in CrewAI**  
+
+## 🎯 **What are Guardrails?**  
+Task **guardrails** allow you to:  
+✅ **Validate** task outputs (e.g., check if it’s JSON).  
+✅ **Transform** task outputs before passing to the next task.  
+✅ **Filter** task outputs to meet specific conditions.  
+
+💡 **Use Case:**  
+🔹 An **AI assistant** generates **JSON data**, but we need to **validate** if the output is **valid JSON** before using it.  
+
+---
+
+## 📝 **Step 3: Using Task Guardrails**  
+
+### **🔹 Example: Validating JSON Output**
+```python
+import json
+from typing import Tuple, Union
+from crewai import Task
+
+# ✅ Define a Guardrail Function to Validate JSON
+def validate_json_output(result: str) -> Tuple[bool, Union[dict, str]]:
+    """Validate that the output is valid JSON."""
+    try:
+        json_data = json.loads(result)  # Attempt to parse JSON
+        return (True, json_data)  # ✅ Success, return parsed JSON
+    except json.JSONDecodeError:
+        return (False, "Output must be valid JSON")  # ❌ Error message
+
+# 📝 Define a Task with a Guardrail
+task = Task(
+    description="Generate JSON data",
+    expected_output="Valid JSON object",
+    guardrail=validate_json_output  # 🛡️ Guardrail applied
+)
+```
+---
+
+## 🔍 **How Guardrails Work**
+✅ **Optional Attribute** – Only used when needed.  
+✅ **Executes Before the Next Task Starts** – Ensures **valid data flow**.  
+✅ **Returns a Tuple `(success, data)`**:  
+   - **If success = `True`**, data is **passed to the next task**.  
+   - **If success = `False`**, the **error message is sent back**, and CrewAI tries again.  
+
+---
+
+## 🎯 **Step 4: Handling Guardrail Failures**  
+
+### **🔹 Example: Handling a Failed Guardrail Check**
+```python
+# Simulated output from a task (Invalid JSON)
+invalid_output = "{invalid_json: true,}"  # ❌ Incorrect format
+
+# Run the guardrail function
+success, data = validate_json_output(invalid_output)
+
+# Handle the result
+if success:
+    print("✅ Valid JSON:", data)
+else:
+    print("❌ Guardrail Failed:", data)  # Output: "Output must be valid JSON"
+```
+✔ The **AI output is checked** before passing it forward.  
+✔ If it’s **invalid**, an **error is returned** instead of breaking the pipeline.  
+
+---
+
+# 🚀 **Key Takeaways**  
+
+✅ **Tool Override** allows agents to use **custom tools** for specific tasks.  
+✅ **Validation Mechanisms** prevent errors and ensure **task consistency**.  
+✅ **Task Guardrails** ensure **valid, structured** data before passing it to the next step.  
+
+---
+
+# 🔥 **What’s Next?**  
+Would you like to see:  
+1️⃣ **Using Guardrails to Check Text Quality?**  
+2️⃣ **Overriding Multiple Tools for Complex Tasks?**  
+
+Let me know! 🚀
+
+# 🎯 **Customer Support Automation Using CrewAI**  
+
+In this example, we will build a **customer support system** using **CrewAI**, focusing on:  
+✅ **Tool Override** – Using different tools for different tasks.  
+✅ **Error Handling & Validation** – Ensuring smooth execution.  
+✅ **Task Guardrails** – Checking if responses are appropriate before sending to customers.  
+
+---
+
+# 🛠️ **Project Overview: AI-Powered Customer Support System**  
+
+## 🔍 **Scenario**  
+We are building a **Customer Support AI Agent** that can:  
+1️⃣ **Search for relevant solutions** (using a search tool).  
+2️⃣ **Summarize customer complaints** (using a text-processing tool).  
+3️⃣ **Generate a response** for the customer.  
+4️⃣ **Validate the response** before sending it.  
+
+💡 **Why use CrewAI?**  
+✅ **Automates customer support** efficiently.  
+✅ **Reduces human intervention** by validating responses before sending.  
+✅ **Ensures correct responses with Guardrails.**  
+
+---
+
+## **📌 Step 1: Installing Required Libraries**  
+Before starting, install the necessary libraries:  
+```sh
+pip install crewai crewai_tools
+```
+
+---
+
+## **👥 Step 2: Defining AI Agents**  
+We will define two agents:  
+1️⃣ **Customer Support Agent** – Handles customer queries.  
+2️⃣ **Response Validation Agent** – Checks if the response is valid before sending.  
+
+```python
+from crewai import Agent
+
+# 🛠️ AI Agent for Handling Customer Queries
+support_agent = Agent(
+    role="Customer Support AI",
+    goal="Help customers by providing relevant solutions",
+    backstory="An AI trained in customer support to assist with queries efficiently.",
+    verbose=True
+)
+
+# ✅ AI Agent for Validating Responses
+validation_agent = Agent(
+    role="Response Validator",
+    goal="Ensure the response is clear, correct, and polite before sending.",
+    backstory="A smart validator that checks responses for clarity and correctness.",
+    verbose=True
+)
+```
+✔ **support_agent** – Finds solutions for customers.  
+✔ **validation_agent** – Ensures responses are professional.  
+
+---
+
+## **🔍 Step 3: Defining Tools & Overriding Default Tools**  
+Each **agent** can have **default tools**, but we will **override** them in tasks when necessary.  
+
+```python
+from crewai_tools import SerperDevTool
+
+# 🔍 Search Tool for Finding Customer Support Solutions
+search_tool = SerperDevTool()
+
+# 📝 Sentiment Analysis Tool for Validating Responses
+def sentiment_analysis(response: str) -> bool:
+    """Mock function to check if response is polite and professional."""
+    blocked_words = ["angry", "useless", "stupid"]
+    for word in blocked_words:
+        if word in response.lower():
+            return False  # ❌ Response contains inappropriate words
+    return True  # ✅ Response is professional
+```
+✔ **search_tool** – Fetches solutions for customer issues.  
+✔ **sentiment_analysis** – Ensures the response is **professional** before sending.  
+
+---
+
+## **📝 Step 4: Defining Tasks**  
+We will create **three tasks**:  
+1️⃣ **Find a solution for a customer query** (using search tool).  
+2️⃣ **Generate a polite response** (handled by the support agent).  
+3️⃣ **Validate the response** before sending it (handled by the validation agent).  
+
+```python
+from crewai import Task
+
+# 🔍 Task 1: Find Relevant Solutions
+search_solution_task = Task(
+    description="Find solutions for customer complaints based on previous support tickets.",
+    expected_output="A list of relevant solutions.",
+    agent=support_agent,
+    tools=[search_tool]  # ✅ Tool Override: Uses search tool instead of text processing
+)
+
+# 📝 Task 2: Generate a Customer Response
+generate_response_task = Task(
+    description="Write a polite and professional response to the customer.",
+    expected_output="A polite and informative response.",
+    agent=support_agent,
+    context=[search_solution_task]  # ✅ Uses the solution found in Task 1
+)
+
+# ✅ Task 3: Validate the Response Before Sending
+validate_response_task = Task(
+    description="Ensure the customer response is professional and appropriate.",
+    expected_output="True if the response is good, False otherwise.",
+    agent=validation_agent,
+    guardrail=sentiment_analysis,  # ✅ Guardrail to check politeness
+    context=[generate_response_task]
+)
+```
+✔ **Task 1** – Uses **Tool Override** to fetch solutions using a **search tool**.  
+✔ **Task 2** – Generates a response **based on Task 1’s results**.  
+✔ **Task 3** – **Validates** the response using **sentiment analysis** before sending.  
+
+---
+
+## **🚀 Step 5: Creating & Running the Crew**  
+We now **combine agents and tasks** into a **CrewAI workflow**.  
+
+```python
+from crewai import Crew
+
+# 👥 Create Crew with Agents & Tasks
+customer_support_crew = Crew(
+    agents=[support_agent, validation_agent],  # Team of AI agents
+    tasks=[search_solution_task, generate_response_task, validate_response_task],
+    verbose=True
+)
+
+# 🚀 Execute the Crew
+result = customer_support_crew.kickoff()
+
+# 📢 Show the Final Validated Response
+print(f"""
+✅ Customer Support Response Ready!
+Response: {generate_response_task.output.raw}
+Valid: {validate_response_task.output.raw}
+""")
+```
+✔ **Executes all tasks** in a structured manner.  
+✔ **Final output is validated** before being sent to the customer.  
+
+---
+
+# 🛠️ **Error Handling & Guardrails in Action**  
+
+## **🔍 Handling Errors: Missing Agent Example**
+```python
+try:
+    invalid_task = Task(
+        description="Handle customer complaint",
+        expected_output="Response to the complaint",
+        agent=None  # ❌ Missing agent (Error!)
+    )
+except Exception as e:
+    print(f"❌ Error: {e}")
+```
+✔ Prevents **undefined agents** from being used in tasks.  
+
+---
+
+## **✅ Guardrails: Ensuring Professional Customer Responses**  
+
+### **Example: Catching an Unprofessional Response**
+```python
+# Simulated AI-generated response
+ai_response = "This issue is useless and annoying."
+
+# Validate the response
+is_valid = sentiment_analysis(ai_response)
+
+# Check the result
+if is_valid:
+    print("✅ Response is professional and polite.")
+else:
+    print("❌ Response is NOT suitable for sending to a customer!")
+```
+✔ **Detects unprofessional language** before sending the response.  
+✔ **Prevents customer dissatisfaction** by ensuring politeness.  
+
+---
+
+# 📌 **Final Summary**
+✅ **Tool Override** – Used to fetch solutions instead of generating random responses.  
+✅ **Error Handling** – Prevents execution errors by validating task attributes.  
+✅ **Task Guardrails** – Ensures customer responses are **polite and professional**.  
+
+---
+
+# 🚀 **Next Steps**
+🔹 **Want to extend this project?**  
+1️⃣ **Add more tools** (e.g., database search, chatbot integration).  
+2️⃣ **Include sentiment analysis AI** instead of a simple function.  
+3️⃣ **Deploy this as an API** for real-world use.  
+
+Let me know how you’d like to proceed! 🚀
