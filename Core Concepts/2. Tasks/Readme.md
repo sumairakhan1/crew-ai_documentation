@@ -2159,3 +2159,247 @@ print("Blog JSON:", result)
 ✅ **Easier to parse and process in other applications**  
 
 Would you like to see **error handling examples** or **dynamic topic generation**? 🚀
+
+# 13. Integrating Tools with Tasks in CrewAI
+# 🚀 **Integrating Tools with Tasks in CrewAI**  
+
+## 🛠️ **Why Integrate Tools in AI Workflows?**  
+
+AI agents alone may **lack real-time data access** or **specific functionalities**. By integrating **CrewAI Toolkit** and **LangChain Tools**, we can:  
+
+✅ **Enhance AI’s capabilities** (e.g., fetching live data, performing calculations).  
+✅ **Improve accuracy** by using **external APIs** like **Serper (Google Search)**.  
+✅ **Ensure better interaction** between tasks by referencing previous outputs.  
+
+---
+
+# 🎯 **Real-World Use Case: AI News Researcher**  
+
+### 🌍 **Scenario**  
+Imagine you’re building an **AI news summarizer** that fetches the **latest AI news**, extracts key insights, and writes a blog.  
+
+### ❌ **Problems Without Tools**  
+- AI **lacks real-time knowledge** (e.g., ChatGPT cannot fetch the latest news).  
+- Agents would rely only on **pre-trained knowledge** (which can be outdated).  
+
+### ✅ **Solution Using Tools**  
+- We use **SerperDevTool** (Google Search API) to **fetch real-time AI news**.  
+- AI then **summarizes** the findings into a structured format.  
+- A writing agent uses **these summaries** to create a blog post.  
+
+---
+
+# 🏗️ **Step 1: Create a Task with Tools**  
+
+```python
+import os
+
+# 🔐 Set API keys for external tools
+os.environ["OPENAI_API_KEY"] = "Your Key"
+os.environ["SERPER_API_KEY"] = "Your Key"  # Google Search API from serper.dev
+
+from crewai import Agent, Task, Crew
+from crewai_tools import SerperDevTool  # 🛠️ Importing a search tool
+
+# 🎭 Define an AI agent for research
+research_agent = Agent(
+  role="Researcher",
+  goal="Find and summarize the latest AI news",
+  backstory="""You're a researcher at a large company.
+  You're responsible for analyzing data and providing insights
+  to the business.""",
+  verbose=True
+)
+
+# 🔎 Define a search tool for real-time AI news
+search_tool = SerperDevTool()
+
+# 📝 Define a task using the search tool
+task = Task(
+  description="Find and summarize the latest AI news",
+  expected_output="A bullet list summary of the top 5 most important AI news",
+  agent=research_agent,
+  tools=[search_tool]  # ✅ Integrating the search tool
+)
+
+# 🏢 Create a Crew and assign the research task
+crew = Crew(
+    agents=[research_agent],
+    tasks=[task],
+    verbose=True
+)
+
+# 🚀 Execute the task
+result = crew.kickoff()
+
+# 🖨 Print the AI-generated summary
+print(result)
+```
+
+---
+
+# 📌 **Breaking Down the Code**  
+
+### 🎯 **Step 1: Setting Up API Keys**  
+```python
+os.environ["OPENAI_API_KEY"] = "Your Key"
+os.environ["SERPER_API_KEY"] = "Your Key"
+```
+- We set **environment variables** to securely store API keys.  
+- `OPENAI_API_KEY` is used for **LLM operations**.  
+- `SERPER_API_KEY` allows access to **Google Search** via Serper.  
+
+---
+
+### 🎯 **Step 2: Creating an AI Researcher Agent**  
+```python
+research_agent = Agent(
+  role="Researcher",
+  goal="Find and summarize the latest AI news",
+  backstory="""You're a researcher at a large company.
+  You're responsible for analyzing data and providing insights
+  to the business.""",
+  verbose=True
+)
+```
+- **Defines an AI agent** responsible for researching AI trends.  
+- **Goal:** Find and summarize the latest AI news.  
+- **Backstory:** Mimics a real-world researcher.  
+
+---
+
+### 🎯 **Step 3: Adding a Search Tool**  
+```python
+search_tool = SerperDevTool()
+```
+- **SerperDevTool** is an external API that **performs live Google searches**.  
+- Allows the AI to **fetch real-time AI news**.  
+
+---
+
+### 🎯 **Step 4: Defining a Task with Tools**  
+```python
+task = Task(
+  description="Find and summarize the latest AI news",
+  expected_output="A bullet list summary of the top 5 most important AI news",
+  agent=research_agent,
+  tools=[search_tool]  # ✅ Uses SerperDevTool for web search
+)
+```
+- **Task Description:** AI must find and summarize the latest AI news.  
+- **Expected Output:** A **bullet list** with the **top 5 AI news items**.  
+- **Tools Used:** The **search tool** fetches real-time data.  
+
+---
+
+### 🎯 **Step 5: Running the AI Workflow**  
+```python
+crew = Crew(
+    agents=[research_agent],
+    tasks=[task],
+    verbose=True
+)
+```
+- Defines a **Crew** with:  
+  - One **research agent**.  
+  - One **task** (AI news search).  
+
+```python
+result = crew.kickoff()
+print(result)
+```
+- **Executes the CrewAI workflow** and prints the AI-generated summary.  
+
+---
+
+# 🔄 **Step 2: Using Outputs from Previous Tasks**  
+
+In **CrewAI**, the output of one task can be **used as context for another task**. This allows us to **connect multiple tasks logically**.  
+
+✅ **Why use task references?**  
+✔ Ensures information flows **smoothly between tasks**.  
+✔ Allows different agents to **build on previous work**.  
+
+### 🎯 **Example: Research + Blog Writing Workflow**  
+
+```python
+# 📝 Research AI trends
+research_ai_task = Task(
+    description="Research the latest developments in AI",
+    expected_output="A list of recent AI developments",
+    async_execution=True,  # ✅ Runs in parallel
+    agent=research_agent,
+    tools=[search_tool]
+)
+
+# 📝 Research AI Ops trends
+research_ops_task = Task(
+    description="Research the latest developments in AI Ops",
+    expected_output="A list of recent AI Ops developments",
+    async_execution=True,
+    agent=research_agent,
+    tools=[search_tool]
+)
+
+# ✍️ Writing task that uses previous research
+write_blog_task = Task(
+    description="Write a full blog post about the importance of AI and its latest news",
+    expected_output="Full blog post that is 4 paragraphs long",
+    agent=writer_agent,  # A different agent for writing
+    context=[research_ai_task, research_ops_task]  # ✅ Uses previous research
+)
+```
+
+---
+
+# 📌 **Breaking Down Task References**  
+
+### 🎯 **Step 1: Parallel Research Tasks**  
+```python
+research_ai_task = Task(
+    description="Research the latest developments in AI",
+    expected_output="A list of recent AI developments",
+    async_execution=True,  # ✅ Runs in parallel
+    agent=research_agent,
+    tools=[search_tool]
+)
+```
+- This **fetches recent AI trends** using **Google Search**.  
+- `async_execution=True` allows **multiple research tasks to run in parallel**.  
+
+---
+
+### 🎯 **Step 2: Writing a Blog Using Research Data**  
+```python
+write_blog_task = Task(
+    description="Write a full blog post about the importance of AI and its latest news",
+    expected_output="Full blog post that is 4 paragraphs long",
+    agent=writer_agent,  
+    context=[research_ai_task, research_ops_task]  # ✅ Uses previous research
+)
+```
+- Uses **previous research outputs** as **context**.  
+- The writing agent **combines AI research and AI Ops research** into a blog.  
+
+---
+
+# 🎯 **Key Takeaways**  
+
+✅ **Enhancing AI with tools**  
+- CrewAI supports **external tools like SerperDev** for **real-time data retrieval**.  
+
+✅ **Better AI task execution**  
+- AI can **search the web**, **fetch APIs**, and **interact with databases**.  
+
+✅ **Task Dependency & Referencing**  
+- AI **can use previous task outputs** to create **logical workflows**.  
+
+---
+
+# 🔥 **Next Steps**  
+
+Would you like to see:  
+1️⃣ **A complete working example with full execution logs?**  
+2️⃣ **How to integrate more tools like Wolfram Alpha or API calls?**  
+
+🚀 Let me know what you need!
