@@ -825,3 +825,445 @@ crew.kickoff()
 ✅ **Easier debugging and flexibility compared to YAML.**  
 
 Would you like to **expand this AI system** with **live web scraping** or **automated email reports**? 🚀
+
+# 🚀 **Understanding Task Outputs in CrewAI**  
+
+Task outputs play a crucial role in **AI workflows**, ensuring that results are well-structured, easy to access, and useful for further processing. CrewAI provides the **`TaskOutput` class**, which helps manage **task results** in various formats, including **raw text, JSON, and structured Pydantic models**.
+
+This guide will **explain `TaskOutput` in-depth**, with **real-world examples, code breakdowns, and step-by-step explanations**.  
+
+---
+
+# 🎯 **Real-World Use Case: AI-Powered News Aggregator**  
+
+Imagine you want to build an **AI news summarizer** that:  
+✅ **Searches for the latest AI news** 📰  
+✅ **Extracts the top 5 headlines** 📌  
+✅ **Formats the output in JSON & Markdown**  
+
+CrewAI’s **`TaskOutput` class** helps **structure** and **store** this data, making it easy to process later.  
+
+---
+
+# 🏗 **1. What is `TaskOutput`?**  
+
+The `TaskOutput` class **stores the result of a completed task**. It supports multiple output formats:  
+
+| 🏷 **Attribute** | 🔍 **Description** |
+|---------------|-----------------|
+| **`description`** | The **task description** (what the AI was asked to do). |
+| **`summary`** | The **first 10 words** of the description (auto-generated). |
+| **`raw`** | The **default raw output** (plain text). |
+| **`pydantic`** | A **structured model** (if specified in the task). |
+| **`json_dict`** | A **JSON object** of the output (if configured). |
+| **`agent`** | The **AI agent** that executed the task. |
+| **`output_format`** | The **format** (RAW, JSON, or Pydantic). |
+
+---
+
+# 🔍 **2. Accessing Task Outputs**  
+
+Once a task is executed, its output is stored in the `output` attribute.  
+
+### ✅ **Methods to Access Task Outputs**  
+
+| 🏷 **Method/Property** | 🔍 **Description** |
+|-----------------|----------------------|
+| **`.json()`** | Returns the output as a **JSON string** (if format is JSON). |
+| **`.to_dict()`** | Converts **JSON/Pydantic output** to a **dictionary**. |
+| **`str()`** | Returns the **output as a string**, prioritizing **Pydantic → JSON → Raw**. |
+
+---
+
+# 🖥 **3. Example: AI News Summarization**  
+
+### ✅ **Step 1: Define the Task**  
+This task **searches for AI news** and **summarizes the top 5 headlines**.
+
+```python
+from crewai import Task, Crew
+import json
+
+# Define the AI research agent
+research_agent = Agent(
+    name="AI News Researcher",
+    role="Finds and summarizes the latest AI news",
+    verbose=True
+)
+
+# Define a search tool (hypothetical)
+search_tool = SomeSearchAPI()
+
+# Create a task to fetch AI news
+task = Task(
+    description='Find and summarize the latest AI news',
+    expected_output='A bullet list summary of the top 5 most important AI news',
+    agent=research_agent,
+    tools=[search_tool],
+    output_format="JSON"  # Store results in JSON format
+)
+```
+
+📌 **What This Does?**  
+1️⃣ **Defines an AI agent** (`research_agent`) to perform the news search.  
+2️⃣ **Uses a tool (`search_tool`)** to fetch the latest AI news.  
+3️⃣ **Creates a task** with:  
+   - **Description**: Find & summarize news.  
+   - **Expected Output**: A **bullet-point summary**.  
+   - **Output Format**: **JSON** (for structured results).  
+
+---
+
+### ✅ **Step 2: Execute the Crew**  
+Now, we **run the task** and store the result.
+
+```python
+# Create a Crew with the agent and task
+crew = Crew(
+    agents=[research_agent],
+    tasks=[task],
+    verbose=True
+)
+
+# Execute the task
+result = crew.kickoff()
+```
+
+📌 **What This Does?**  
+- Registers **the agent and task** inside the Crew.  
+- Calls `.kickoff()` to **start the process**.  
+
+---
+
+### ✅ **Step 3: Retrieve & Print Task Output**  
+
+```python
+# Accessing the task output
+task_output = task.output
+
+print(f"🔍 Task Description: {task_output.description}")
+print(f"📝 Task Summary: {task_output.summary}")
+print(f"📄 Raw Output: {task_output.raw}")
+
+# If JSON output exists, print it
+if task_output.json_dict:
+    print(f"📦 JSON Output:\n{json.dumps(task_output.json_dict, indent=2)}")
+
+# If Pydantic output exists, print it
+if task_output.pydantic:
+    print(f"📊 Pydantic Output:\n{task_output.pydantic}")
+```
+
+---
+
+# 🔍 **4. Code Breakdown**  
+
+### 📌 **Retrieving Task Output**  
+```python
+task_output = task.output
+```
+- The **output** of the task is **stored** in `task.output`.  
+
+### 📌 **Printing the Raw Output**  
+```python
+print(f"📄 Raw Output: {task_output.raw}")
+```
+- Displays the **default text output**.  
+
+### 📌 **Printing the JSON Output (If Available)**  
+```python
+if task_output.json_dict:
+    print(f"📦 JSON Output:\n{json.dumps(task_output.json_dict, indent=2)}")
+```
+- Converts the JSON **into a formatted string** and prints it.  
+
+### 📌 **Printing the Pydantic Output (If Available)**  
+```python
+if task_output.pydantic:
+    print(f"📊 Pydantic Output:\n{task_output.pydantic}")
+```
+- If the task was configured with a **Pydantic model**, prints the structured output.  
+
+---
+
+# 🚀 **5. Output Example (Terminal Output)**  
+
+```
+🔍 Task Description: Find and summarize the latest AI news
+📝 Task Summary: Find and summarize the
+📄 Raw Output: 
+- AI Breakthrough in 2025: New Model Beats GPT-4  
+- AI Detects Cancer with 98% Accuracy  
+- Tesla Launches AI-Powered Self-Driving Chip  
+- OpenAI Introduces AI-Powered Coding Assistant  
+- AI Outperforms Humans in Complex Problem-Solving  
+
+📦 JSON Output:
+{
+  "top_news": [
+    "AI Breakthrough in 2025: New Model Beats GPT-4",
+    "AI Detects Cancer with 98% Accuracy",
+    "Tesla Launches AI-Powered Self-Driving Chip",
+    "OpenAI Introduces AI-Powered Coding Assistant",
+    "AI Outperforms Humans in Complex Problem-Solving"
+  ]
+}
+```
+
+---
+
+# 🎯 **6. Key Takeaways**  
+
+✅ **TaskOutput** helps structure task results for easier processing.  
+✅ It supports **multiple formats**: **RAW, JSON, Pydantic**.  
+✅ **JSON & Pydantic** formats make **data transfer & integration easy**.  
+✅ **Useful for real-world applications**, like **news summarization, reporting, and research**.  
+
+Would you like to **extend this project** by **storing results in a database** or **sending summaries via email?** 🚀
+
+# 🚀 **Understanding Task Dependencies and Guardrails in CrewAI**  
+
+When working with **AI workflows**, tasks often rely on **previous task outputs** to function properly. CrewAI allows you to manage **task dependencies** using the **`context`** attribute, ensuring a **smooth workflow** between multiple tasks.  
+
+Additionally, **task guardrails** act as **validation checks** to ensure the **quality** and **integrity** of task outputs before they are passed to the next step.  
+
+This guide will **break down these concepts in detail**, with **real-world use cases, code explanations, and step-by-step breakdowns**.  
+
+---
+
+# 🎯 **Real-World Use Case: AI-Powered Blog Generator**  
+
+Imagine you are building an **AI-powered blogging system** where:  
+
+✅ **Task 1**: An AI **researcher** gathers the latest AI news. 📰  
+✅ **Task 2**: An AI **analyst** analyzes trends from the research. 📊  
+✅ **Task 3**: An AI **writer** generates a blog post from the analysis. ✍️  
+✅ **Task 4**: A **quality guardrail** ensures the blog follows word limits. ✅  
+
+This workflow ensures **structured AI-generated content**, improving **automation** and **quality**.
+
+---
+
+# 🏗 **1. Task Dependencies: Passing Context Between Tasks**  
+
+### ✅ **What Are Task Dependencies?**  
+Tasks can **depend on the output of other tasks** using the **`context` attribute**.  
+- The **second task** will **wait** until the **first task is completed**.  
+- The **third task** can use the **second task’s output** as its input.  
+
+### 🖥 **Code Example: AI Research & Analysis Workflow**  
+
+```python
+from crewai import Task, Crew
+
+# Define the AI research agent
+researcher = Agent(
+    name="AI Researcher",
+    role="Finds the latest developments in AI",
+    verbose=True
+)
+
+# Define the AI analyst agent
+analyst = Agent(
+    name="AI Analyst",
+    role="Analyzes research findings to identify trends",
+    verbose=True
+)
+
+# Define the first task: Research AI developments
+research_task = Task(
+    description="Research the latest developments in AI",
+    expected_output="A list of recent AI developments",
+    agent=researcher
+)
+
+# Define the second task: Analyze research findings
+analysis_task = Task(
+    description="Analyze the research findings and identify key trends",
+    expected_output="Analysis report of AI trends",
+    agent=analyst,
+    context=[research_task]  # Waits for research_task to complete
+)
+```
+
+---
+
+### 📌 **Breaking Down the Code**  
+
+#### 📍 **Step 1: Define AI Agents**  
+```python
+researcher = Agent(
+    name="AI Researcher",
+    role="Finds the latest developments in AI",
+    verbose=True
+)
+```
+- **Creates an AI agent** (`researcher`) that **fetches AI news**.  
+
+```python
+analyst = Agent(
+    name="AI Analyst",
+    role="Analyzes research findings to identify trends",
+    verbose=True
+)
+```
+- **Creates another AI agent** (`analyst`) to **analyze AI trends**.  
+
+---
+
+#### 📍 **Step 2: Define the First Task (Research AI News)**  
+```python
+research_task = Task(
+    description="Research the latest developments in AI",
+    expected_output="A list of recent AI developments",
+    agent=researcher
+)
+```
+- This **research task** fetches **the latest AI news**.  
+
+---
+
+#### 📍 **Step 3: Define the Dependent Task (Analyze AI Trends)**  
+```python
+analysis_task = Task(
+    description="Analyze the research findings and identify key trends",
+    expected_output="Analysis report of AI trends",
+    agent=analyst,
+    context=[research_task]  # Waits for research_task to complete
+)
+```
+- **Context `[research_task]`** ensures that `analysis_task` **only starts** after `research_task` **is completed**.  
+
+---
+
+# 🛡 **2. Task Guardrails: Ensuring Output Quality**  
+
+### ✅ **What Are Task Guardrails?**  
+Guardrails **validate and transform** task outputs **before passing them to the next step**.  
+- Ensures **data accuracy** ✅  
+- Prevents **invalid outputs** ❌  
+- **Returns feedback** if the output **doesn’t meet criteria**  
+
+---
+
+### 🖥 **Code Example: Blog Content Validation**  
+
+```python
+from typing import Tuple, Union, Dict, Any
+
+def validate_blog_content(result: str) -> Tuple[bool, Union[Dict[str, Any], str]]:
+    """Validate blog content meets requirements."""
+    try:
+        # Check word count
+        word_count = len(result.split())
+        if word_count > 200:
+            return (False, {
+                "error": "Blog content exceeds 200 words",
+                "code": "WORD_COUNT_ERROR",
+                "context": {"word_count": word_count}
+            })
+
+        # Additional validation logic here
+        return (True, result.strip())
+    except Exception as e:
+        return (False, {
+            "error": "Unexpected error during validation",
+            "code": "SYSTEM_ERROR"
+        })
+
+# Define the blog writing task
+blog_task = Task(
+    description="Write a blog post about AI",
+    expected_output="A blog post under 200 words",
+    agent=blog_agent,
+    guardrail=validate_blog_content  # Add the guardrail function
+)
+```
+
+---
+
+### 📌 **Breaking Down the Code**  
+
+#### 📍 **Step 1: Define a Guardrail Function**  
+```python
+def validate_blog_content(result: str) -> Tuple[bool, Union[Dict[str, Any], str]]:
+```
+- The function **validates** AI-generated blog content.  
+- It **returns a tuple**:  
+  - **`True, result`** if valid ✅  
+  - **`False, error message`** if invalid ❌  
+
+---
+
+#### 📍 **Step 2: Check Word Count**  
+```python
+word_count = len(result.split())
+if word_count > 200:
+    return (False, {
+        "error": "Blog content exceeds 200 words",
+        "code": "WORD_COUNT_ERROR",
+        "context": {"word_count": word_count}
+    })
+```
+- Counts words in the **AI-generated blog**.  
+- **If it exceeds 200 words**, the **guardrail rejects** the content.  
+
+---
+
+#### 📍 **Step 3: Return Valid Content**  
+```python
+return (True, result.strip())
+```
+- If the content **meets criteria**, it **passes through** ✅.  
+
+---
+
+#### 📍 **Step 4: Attach the Guardrail to the Task**  
+```python
+blog_task = Task(
+    description="Write a blog post about AI",
+    expected_output="A blog post under 200 words",
+    agent=blog_agent,
+    guardrail=validate_blog_content  # Add the guardrail function
+)
+```
+- The `guardrail` function **validates the AI-generated blog** before it moves to the next step.  
+
+---
+
+# 📌 **3. Full Workflow: Research → Analysis → Blog Writing with Validation**  
+
+```python
+crew = Crew(
+    agents=[researcher, analyst, blog_agent],
+    tasks=[research_task, analysis_task, blog_task],
+    verbose=True
+)
+
+result = crew.kickoff()
+```
+- **Runs all tasks in order** 🚀  
+- **Ensures dependencies are met** ✅  
+- **Validates final blog output** ✍️  
+
+---
+
+# 🔍 **4. Output Example (Terminal Output)**  
+
+```
+🔍 Research Task: Found 5 latest AI developments.
+📊 Analysis Task: Identified top 3 AI trends.
+📝 Blog Task: Generated AI blog (Word Count: 250)
+❌ ERROR: Blog content exceeds 200 words (Task Rejected)
+```
+
+---
+
+# 🎯 **5. Key Takeaways**  
+
+✅ **Task Dependencies** ensure tasks **execute in the correct order**.  
+✅ The **`context` attribute** passes **data between tasks**.  
+✅ **Task Guardrails** validate outputs **before moving forward**.  
+✅ **Real-world uses**: News analysis, content moderation, data validation.  
+
+Would you like to **extend this project** by adding **AI-generated summaries** or **email notifications**? 🚀
