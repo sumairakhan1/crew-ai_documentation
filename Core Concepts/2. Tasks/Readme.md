@@ -1949,3 +1949,213 @@ print("Blog:", result)
 ✅ **Multiple ways to access results**  
 
 Would you like to extend this with **error handling or dynamic topics**? 🚀
+
+---
+
+# 12. Using Output Json
+# 📌 **Using `output_json` in CrewAI**  
+
+In **AI-powered workflows**, ensuring **structured output** is crucial for consistency and reliability.  
+
+**🚀 `output_json`** helps define the expected **output format as JSON**, making the data **easy to parse and use** in applications.  
+
+✔ **Why use JSON output?**  
+- ✅ **Standard format** – JSON is widely used in APIs and databases.  
+- ✅ **Easy to parse** – Programming languages have built-in JSON support.  
+- ✅ **Reliable structure** – Ensures AI-generated output is consistent.  
+
+---
+
+# 🏗️ **How `output_json` Works in CrewAI**  
+
+- When defining a task, you can specify `output_json`, which ensures the output **follows a valid JSON structure**.  
+- The **final output of the task** becomes the **final output of the CrewAI workflow**.  
+- This structured output **eliminates inconsistencies** and makes AI-generated data easy to process.  
+
+---
+
+# 📌 **Real-World Example: AI Blog Generator**  
+
+### 🌍 **Scenario**  
+Imagine you're building an **AI-powered blog generator** that produces **titles and content** for blog posts.  
+
+### ❌ **Problems Without JSON Output**  
+- AI might return **unstructured text**, making it hard to extract a **title** and **content**.  
+- If integrated with an API, missing or incorrect fields could cause **errors**.  
+- The output might **not be valid JSON**, leading to **parsing issues**.  
+
+### ✅ **Solution Using `output_json`**  
+- Ensures AI-generated output **follows a proper JSON structure**.  
+- Guarantees **title and content fields** are always present.  
+- Makes it easy to **integrate with APIs, databases, and frontend applications**.  
+
+---
+
+# 🖥 **Example Code: Using `output_json` in CrewAI**  
+
+```python
+import json
+from crewai import Agent, Crew, Process, Task
+from pydantic import BaseModel
+
+# 🏗 Define a Pydantic model for structured output
+class Blog(BaseModel):
+    title: str  # ✅ Blog title
+    content: str  # ✅ Blog content
+
+# 🎭 Define the AI agent responsible for content generation
+blog_agent = Agent(
+    role="Blog Content Generator Agent",
+    goal="Generate a blog title and content",
+    backstory="You are an expert content creator, skilled in crafting engaging and informative blog posts.",
+    verbose=False,
+    allow_delegation=False,
+    llm="gpt-4o",
+)
+
+# 📝 Define a task with JSON output
+task1 = Task(
+    description="Create a blog title and content on a given topic. Make sure the content is under 200 words.",
+    expected_output="A JSON object with 'title' and 'content' fields.",
+    agent=blog_agent,
+    output_json=Blog,  # 🔄 Ensures AI output follows JSON format
+)
+
+# 🏢 Create a Crew and assign the task
+crew = Crew(
+    agents=[blog_agent],
+    tasks=[task1],
+    verbose=True,
+    process=Process.sequential,  # 🔄 Tasks run one after another
+)
+
+# 🚀 Execute the CrewAI workflow
+result = crew.kickoff()
+
+# 📌 Accessing the output in multiple ways:
+
+# ✅ Option 1: Dictionary-style indexing
+print("Accessing Properties - Option 1")
+title = result["title"]
+content = result["content"]
+print("Title:", title)
+print("Content:", content)
+
+# ✅ Option 2: Printing the entire JSON object
+print("Accessing Properties - Option 2")
+print("Blog JSON:", result)
+```
+
+---
+
+# 📌 **Breaking Down the Code**  
+
+### 🎯 **Step 1: Define a Pydantic Model for JSON Output**  
+```python
+class Blog(BaseModel):
+    title: str
+    content: str
+```
+- **Ensures AI output follows this structure**.  
+- AI **must return** `title` and `content`, or else **validation fails**.  
+
+---
+
+### 🎯 **Step 2: Create an AI Agent**  
+```python
+blog_agent = Agent(
+    role="Blog Content Generator Agent",
+    goal="Generate a blog title and content",
+    backstory="You are an expert content creator, skilled in crafting engaging and informative blog posts.",
+    verbose=False,
+    allow_delegation=False,
+    llm="gpt-4o",
+)
+```
+- Defines an **AI agent** specialized in writing blogs.  
+- Uses **GPT-4o** as its language model.  
+
+---
+
+### 🎯 **Step 3: Define a Task with `output_json`**  
+```python
+task1 = Task(
+    description="Create a blog title and content on a given topic. Make sure the content is under 200 words.",
+    expected_output="A JSON object with 'title' and 'content' fields.",
+    agent=blog_agent,
+    output_json=Blog,  # ✅ Ensures output is a valid JSON object
+)
+```
+- This **task** asks AI to generate a **blog title and content**.  
+- The `output_json=Blog` ensures the output is **formatted as JSON**.  
+
+---
+
+### 🎯 **Step 4: Create a Crew and Assign the Task**  
+```python
+crew = Crew(
+    agents=[blog_agent],
+    tasks=[task1],
+    verbose=True,
+    process=Process.sequential,  # 🔄 Ensures tasks run in order
+)
+```
+- Creates a **CrewAI workflow** with **one agent and one task**.  
+- Uses **sequential processing** to run tasks **one after another**.  
+
+---
+
+### 🎯 **Step 5: Run the AI Task and Get Results**  
+```python
+result = crew.kickoff()
+```
+- This **executes the task**, and AI generates a **JSON object with title and content**.  
+
+---
+
+# 📌 **How to Access the JSON Output?**  
+
+Once the task is executed, the **result is stored as JSON**. You can access it in **multiple ways**:  
+
+✅ **Option 1: Dictionary-style indexing**  
+```python
+title = result["title"]
+content = result["content"]
+```
+- Retrieves the **title and content** from the JSON response.  
+
+✅ **Option 2: Printing the entire JSON object**  
+```python
+print("Blog JSON:", result)
+```
+- Prints the entire **JSON-formatted blog object**.  
+
+---
+
+# 📌 **Why Use `output_json` Instead of `output_pydantic`?**  
+
+| Feature | `output_pydantic` | `output_json` |
+|---------|-----------------|-----------------|
+| **Ensures structured output** | ✅ Yes | ✅ Yes |
+| **Uses Pydantic validation** | ✅ Yes | ❌ No |
+| **Returns a JSON object** | ❌ No | ✅ Yes |
+| **Best for APIs & frontend apps** | ❌ No | ✅ Yes |
+
+**👉 Use `output_json` when:**  
+✔ You need a **pure JSON response**.  
+✔ You want to integrate with **APIs, databases, or JavaScript apps**.  
+
+**👉 Use `output_pydantic` when:**  
+✔ You need **strict validation** with Pydantic.  
+✔ You're working **inside Python** and need structured objects.  
+
+---
+
+# 🎯 **Key Takeaways**  
+
+✅ **Ensures AI-generated output is valid JSON**  
+✅ **Prevents missing or malformed data**  
+✅ **Ideal for APIs, frontend integration, and databases**  
+✅ **Easier to parse and process in other applications**  
+
+Would you like to see **error handling examples** or **dynamic topic generation**? 🚀
